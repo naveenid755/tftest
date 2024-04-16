@@ -16,3 +16,16 @@ resource "aws_vpc" "main" {
 # =========================
 # Create your subnets here
 # =========================
+resource "aws_subnet" "privatesub" {
+ # count                   = local.private_count
+  vpc_id                  = var.vpc_id
+  availability_zone       = var.availability_zone
+  cidr_block              = cidrsubnet(var.cidr_block, ceil(log(var.max_subnets, 2)), count.index)
+  map_public_ip_on_launch = var.map_public_ip_on_launch_enabled
+
+  tags = merge(module.private_label.tags, {
+    "Name"  = "${module.private_label.id}${module.this.delimiter}${element(var.subnet_names, count.index)}"
+    "Named" = var.subnet_names[count.index]
+    "Type"  = var.type
+  }, var.tags)
+}
