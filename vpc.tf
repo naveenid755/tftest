@@ -16,7 +16,7 @@ resource "aws_vpc" "main" {
 # =========================
 # Create your subnets here
 # =========================
-resource "aws_subnet" "privatesub" {
+/* resource "aws_subnet" "privatesub" {
  # count                   = local.private_count
   vpc_id                  = var.vpc_id
   availability_zone       = var.availability_zone
@@ -29,3 +29,4 @@ resource "aws_subnet" "privatesub" {
     "Type"  = var.type
   }, var.tags)
 }
+*/
