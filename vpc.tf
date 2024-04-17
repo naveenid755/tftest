@@ -15,18 +15,34 @@ resource "aws_vpc" "main" {
 
 # =========================
 # Create your subnets here
-# =========================
-/* resource "aws_subnet" "privatesub" {
- # count                   = local.private_count
-  vpc_id                  = var.vpc_id
-  availability_zone       = var.availability_zone
-  cidr_block              = cidrsubnet(var.cidr_block, ceil(log(var.max_subnets, 2)), count.index)
-  map_public_ip_on_launch = var.map_public_ip_on_launch_enabled
+# ==========================
+/*
+module "subnets" {
+  source  = "hashicorp/subnets/cidr"
+  version = "1.0.0"
+   base_cidr_block =  aws_vpc.main.id
+    networks = "default"
+#   map_public_ip_on_launch = "true"
+#   availability_zone = "eu-west-2a"
+# insert the 2 required variables here
+}*/
 
-  tags = merge(module.private_label.tags, {
-    "Name"  = "${module.private_label.id}${module.this.delimiter}${element(var.subnet_names, count.index)}"
-    "Named" = var.subnet_names[count.index]
-    "Type"  = var.type
-  }, var.tags)
+resource "aws_subnet" "private_sub" {
+  vpc_id                  = aws_vpc.main.id
+  cidr_block              = var.vpc_cidr
+  map_public_ip_on_launch = "false"
+  availability_zone       = "us-west-1b"
 }
-*/
+
+
+resource "aws_subnet" "public_sub" {
+  vpc_id                  = aws_vpc.main.id
+ # cidr_block              = var.vpc_cidr
+  cidr_block = cidrsubnet(var.vpc_cidr, 0, 0)
+
+  map_public_ip_on_launch = "true" //it makes this a public subnet
+  availability_zone       = "us-west-1b"
+}
+resource "aws_internet_gateway" "gw" {
+  vpc_id = aws_vpc.main.id
+}
