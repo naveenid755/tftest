@@ -4,12 +4,12 @@ variable "aws_region" {
   default     = "us-west-1"
 }
 
-variable "aws_access_key" {
-  description = "AWS Access Key ID for the target AWS account"
+variable "aws_access_key" {  // will be provided directly at the time of Terraform Apply for the testing. // added in Local file for security for testing 
+  description = "AWS Access Key ID for the target AWS account" 
   type        = string
 }
 
-variable "aws_secret_key" {
+variable "aws_secret_key" {   // will be provided directly at the time of Terraform Apply for the testing. // added in Local file for security for testing 
   description = "AWS Secret Key for the target AWS account"
   type        = string
 }
