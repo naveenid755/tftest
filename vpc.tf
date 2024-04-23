@@ -29,20 +29,23 @@ module "subnets" {
 
 resource "aws_subnet" "private_sub" {
   vpc_id                  = aws_vpc.main.id
-  cidr_block              = var.vpc_cidr
+ # cidr_block              = var.vpc_cidr
   map_public_ip_on_launch = "false"
   availability_zone       = "us-west-1b"
+  cidr_block = cidrsubnet(var.vpc_cidr, 4, 4)
 }
 
 
 resource "aws_subnet" "public_sub" {
   vpc_id                  = aws_vpc.main.id
  # cidr_block              = var.vpc_cidr
-  cidr_block = cidrsubnet(var.vpc_cidr, 0, 0)
+  cidr_block = cidrsubnet(var.vpc_cidr, 4, 8)
 
-  map_public_ip_on_launch = "true" //it makes this a public subnet
+  map_public_ip_on_launch = "true"
   availability_zone       = "us-west-1b"
 }
+
+
 resource "aws_internet_gateway" "gw" {
   vpc_id = aws_vpc.main.id
 }
