@@ -1,11 +1,3 @@
-module "label_vpc" {
-  source     = "cloudposse/label/null"
-  version    = "0.25.0"
-  context    = module.base_label.context
-  name       = "vpc"
-  attributes = ["main"]
-}
-
 resource "aws_vpc" "main" {
   cidr_block           = var.vpc_cidr
   enable_dns_support   = true
@@ -16,26 +8,17 @@ resource "aws_vpc" "main" {
 # =========================
 # Create your subnets here
 # ==========================
-/*
-module "subnets" {
-  source  = "hashicorp/subnets/cidr"
-  version = "1.0.0"
-   base_cidr_block =  aws_vpc.main.id
-    networks = "default"
-#   map_public_ip_on_launch = "true"
-#   availability_zone = "eu-west-2a"
-# insert the 2 required variables here
-}*/
 
 data "aws_availability_zones" "available" {
   state = "available"
 }
 
-module "label" {
+/*module "label" {
   source  = "cloudposse/label/null"
   version = "0.25.0"
   # insert the 12 required variables here
-}
+}*/
+
 
 resource "aws_subnet" "private_sub" {
   vpc_id = aws_vpc.main.id
@@ -44,7 +27,7 @@ resource "aws_subnet" "private_sub" {
   availability_zone       = data.aws_availability_zones.available.names[0]
  # availability_zone= "${data.aws_availability_zones.available.names[count.index]}"
   cidr_block              = cidrsubnet(var.vpc_cidr, 4, 4)
-  tags                 = module.label.tags
+  tags                 = module.private_subnet.tags
 
 }
 
@@ -57,9 +40,8 @@ resource "aws_subnet" "public_sub" {
   map_public_ip_on_launch = "true"
   availability_zone       = data.aws_availability_zones.available.names[0]
 # availability_zone= "${data.aws_availability_zones.available.names[count.index]}"
-  tags                 = module.label.tags
+  tags                 = module.public_subnet.tags
 }
-
 
 resource "aws_internet_gateway" "gw" {
   depends_on = [
@@ -69,8 +51,7 @@ resource "aws_internet_gateway" "gw" {
   ]
 
   vpc_id = aws_vpc.main.id
-
-  tags                 = module.label.tags
+  tags                 = module.internet_gateway.tags
 }
 
 
@@ -88,7 +69,7 @@ resource "aws_route_table" "Public-Subnet-RT" {
     cidr_block = "0.0.0.0/0"
     gateway_id = aws_internet_gateway.gw.id
   }
-      tags                 = module.label.tags
+      tags                 = module.route_table.tags
   /*  tags = {
     Name = "Route Table for Internet Gateway"
   }*/
@@ -113,6 +94,7 @@ resource "aws_eip" "nat-gw-eip" {
   ]
   #vpc = true
   domain = "vpc"
+ tags       = module.nat_eip.tags
 }
 
 resource "aws_nat_gateway" "nat-gw" {
@@ -124,9 +106,9 @@ resource "aws_nat_gateway" "nat-gw" {
 
   # Associating it inPublic subnet
   subnet_id = aws_subnet.public_sub.id
-  tags = {
-    Name = "Nat-Gateway"
-  }
+
+  tags = module.nat_gateway.tags
+
 }
 
 # Creating a Route Table for the Nat Gateway!
@@ -141,9 +123,9 @@ resource "aws_route_table" "nat-gw-RT" {
     nat_gateway_id = aws_nat_gateway.nat-gw.id
   }
 
-  tags = {
-    Name = "Route Table for NAT Gateway"
-  }
+#  tags = {
+ #   Name = "Route Table for NAT Gateway"
+  #}
 
 }
 
@@ -153,14 +135,13 @@ resource "aws_route_table_association" "nat-gw-RT-Association" {
     aws_route_table.nat-gw-RT
   ]
 
-  #  Private Subnet ID for adding this route table to the DHCP server of Private sub
   subnet_id = aws_subnet.private_sub.id
 
   route_table_id = aws_route_table.nat-gw-RT.id
 }
 
 
-# Creating a Security Group for WordPress
+# Creating a Security Group
 resource "aws_security_group" "main-SG" {
 
   depends_on = [
@@ -212,4 +193,8 @@ resource "aws_security_group" "main-SG" {
     protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
   }
+
+        tags = module.security_group.tags
+
+
 }
