@@ -31,34 +31,46 @@ data "aws_availability_zones" "available" {
   state = "available"
 }
 
+module "label" {
+  source  = "cloudposse/label/null"
+  version = "0.25.0"
+  # insert the 12 required variables here
+}
 
 resource "aws_subnet" "private_sub" {
-  vpc_id                  = aws_vpc.main.id
- # cidr_block              = var.vpc_cidr
+  vpc_id = aws_vpc.main.id
+  # cidr_block              = var.vpc_cidr
   map_public_ip_on_launch = "false"
   availability_zone       = data.aws_availability_zones.available.names[0]
-  cidr_block = cidrsubnet(var.vpc_cidr, 4, 4)
+ # availability_zone= "${data.aws_availability_zones.available.names[count.index]}"
+  cidr_block              = cidrsubnet(var.vpc_cidr, 4, 4)
+  tags                 = module.label.tags
+
 }
 
 
 resource "aws_subnet" "public_sub" {
-  vpc_id                  = aws_vpc.main.id
- # cidr_block              = var.vpc_cidr
+  vpc_id = aws_vpc.main.id
+  # cidr_block              = var.vpc_cidr
   cidr_block = cidrsubnet(var.vpc_cidr, 4, 8)
 
   map_public_ip_on_launch = "true"
-  availability_zone       = data.aws_availability_zones.available.names[1]
+  availability_zone       = data.aws_availability_zones.available.names[0]
+# availability_zone= "${data.aws_availability_zones.available.names[count.index]}"
+  tags                 = module.label.tags
 }
 
 
 resource "aws_internet_gateway" "gw" {
-   depends_on = [
+  depends_on = [
     aws_vpc.main,
     aws_subnet.private_sub,
     aws_subnet.public_sub
   ]
 
   vpc_id = aws_vpc.main.id
+
+  tags                 = module.label.tags
 }
 
 
@@ -76,8 +88,8 @@ resource "aws_route_table" "Public-Subnet-RT" {
     cidr_block = "0.0.0.0/0"
     gateway_id = aws_internet_gateway.gw.id
   }
-
-/*  tags = {
+      tags                 = module.label.tags
+  /*  tags = {
     Name = "Route Table for Internet Gateway"
   }*/
 }
@@ -91,7 +103,7 @@ resource "aws_route_table_association" "RT-IG-Association" {
     aws_route_table.Public-Subnet-RT
   ]
   subnet_id      = aws_subnet.public_sub.id
-   route_table_id = aws_route_table.Public-Subnet-RT.id
+  route_table_id = aws_route_table.Public-Subnet-RT.id
 }
 
 # Elastic IP for the NAT
@@ -125,7 +137,7 @@ resource "aws_route_table" "nat-gw-RT" {
 
   vpc_id = aws_vpc.main.id
   route {
-    cidr_block = "0.0.0.0/0"
+    cidr_block     = "0.0.0.0/0"
     nat_gateway_id = aws_nat_gateway.nat-gw.id
   }
 
@@ -141,8 +153,8 @@ resource "aws_route_table_association" "nat-gw-RT-Association" {
     aws_route_table.nat-gw-RT
   ]
 
-#  Private Subnet ID for adding this route table to the DHCP server of Private sub
-  subnet_id      = aws_subnet.private_sub.id
+  #  Private Subnet ID for adding this route table to the DHCP server of Private sub
+  subnet_id = aws_subnet.private_sub.id
 
   route_table_id = aws_route_table.nat-gw-RT.id
 }
@@ -161,7 +173,7 @@ resource "aws_security_group" "main-SG" {
 
   name = "webserver-sg"
 
- vpc_id = aws_vpc.main.id
+  vpc_id = aws_vpc.main.id
 
   ingress {
     description = "HTTP for webserver"
